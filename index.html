@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>수목 태그</title>
+  <style>
+    body { margin: 0; font-family: system-ui, -apple-system, "Pretendard", "Noto Sans KR", sans-serif; }
+    .wrap { max-width: 1100px; margin: 0 auto; padding: 16px; }
+    .stage {
+      position: relative;
+      width: 100%;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 8px 30px rgba(0,0,0,.08);
+      background: #f6f7f8;
+    }
+    .stage img { width: 100%; display: block; }
+    .dot {
+      position: absolute;
+      width: 16px; height: 16px;
+      transform: translate(-50%, -50%);
+      border-radius: 999px;
+      border: 2px solid #fff;
+      background: rgba(0,0,0,.75);
+      cursor: pointer;
+      box-shadow: 0 6px 18px rgba(0,0,0,.18);
+    }
+    .dot:hover { transform: translate(-50%, -50%) scale(1.12); }
+
+    .tooltip {
+      position: absolute;
+      transform: translate(-50%, calc(-100% - 12px));
+      background: rgba(20,20,20,.92);
+      color: #fff;
+      padding: 8px 10px;
+      border-radius: 10px;
+      font-size: 14px;
+      line-height: 1.2;
+      white-space: nowrap;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity .12s ease;
+    }
+    .tooltip::after{
+      content:"";
+      position:absolute;
+      left:50%;
+      bottom:-8px;
+      transform:translateX(-50%);
+      border:8px solid transparent;
+      border-top-color: rgba(20,20,20,.92);
+    }
+    .tooltip.on { opacity: 1; }
+
+    .hint { color:#555; margin: 10px 2px 14px; font-size: 14px; }
+    .bar { display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
+    .btn {
+      border: 1px solid #ddd; background:#fff; padding:10px 12px; border-radius: 12px;
+      cursor:pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h2>사진 클릭 → 수목 이름 표시</h2>
+    <div class="hint">점(●)을 클릭하면 수목명이 뜹니다. (모바일도 됨)</div>
+
+    <div class="stage" id="stage">
+      <img id="photo" src="photo.jpg" alt="수목 사진" />
+      <!-- 점들이 JS로 자동 생성됨 -->
+    </div>
+
+    <div class="bar">
+      <button class="btn" id="toggleDots">점 표시/숨김</button>
+      <button class="btn" id="closeTip">툴팁 닫기</button>
+    </div>
+  </div>
+
+  <script src="trees.js"></script>
+  <script>
+    const stage = document.getElementById("stage");
+    const photo = document.getElementById("photo");
+
+    let dotsVisible = true;
+
+    // 툴팁 1개만 재사용
+    const tip = document.createElement("div");
+    tip.className = "tooltip";
+    stage.appendChild(tip);
+
+    function showTip(xPct, yPct, text) {
+      tip.textContent = text;
+      tip.style.left = xPct + "%";
+      tip.style.top  = yPct + "%";
+      tip.classList.add("on");
+    }
+
+    function hideTip() {
+      tip.classList.remove("on");
+    }
+
+    function clearDots() {
+      [...stage.querySelectorAll(".dot")].forEach(d => d.remove());
+    }
+
+    function renderDots() {
+      clearDots();
+      (window.TREES || []).forEach((t) => {
+        const dot = document.createElement("button");
+        dot.className = "dot";
+        dot.type = "button";
+        dot.style.left = t.x + "%";
+        dot.style.top  = t.y + "%";
+        dot.title = t.name;
+
+        dot.addEventListener("click", (e) => {
+          e.stopPropagation();
+          showTip(t.x, t.y, t.name);
+        });
+
+        stage.appendChild(dot);
+        if (!dotsVisible) dot.style.display = "none";
+      });
+    }
+
+    // 배경 클릭 시 닫기
+    stage.addEventListener("click", hideTip);
+    window.addEventListener("scroll", hideTip);
+
+    // 버튼들
+    document.getElementById("toggleDots").addEventListener("click", () => {
+      dotsVisible = !dotsVisible;
+      [...stage.querySelectorAll(".dot")].forEach(d => d.style.display = dotsVisible ? "block" : "none");
+      hideTip();
+    });
+    document.getElementById("closeTip").addEventListener("click", hideTip);
+
+    // 이미지 로드 후 점 그리기
+    photo.addEventListener("load", renderDots);
+    if (photo.complete) renderDots();
+  </script>
+</body>
+</html>
